@@ -24,6 +24,8 @@ dependencies = [
     "python-dotenv>=1.0.0",
     "pydantic>=2.10.0",
     "pydantic-settings>=2.7.0",
+    "pyarrow>=18.0.0",
+    "google-cloud-storage>=2.18.0",
 ]
 
 [project.optional-dependencies]
