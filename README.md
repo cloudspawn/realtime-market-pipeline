@@ -61,12 +61,13 @@ Production-grade real-time market data pipeline: multi-source ingestion → Kafk
 - **Multi-source ingestion**: Binance WebSocket (real-time trades) + CoinGecko API (market data)
 - **20 cryptocurrencies**: BTC, ETH, SOL, ADA, DOT, AVAX, LINK, MATIC, XRP, BNB, DOGE, SHIB, LTC, ATOM, NEAR, APT, ARB, OP, INJ, SUI
 - **Kafka streaming**: Multi-topic architecture with partitioning by symbol
-- **Production patterns**: Retry with exponential backoff, automatic reconnection, graceful shutdown
+- **Dual-write consumer**: BigQuery (data warehouse) + GCS Parquet (data lake)
+- **Data lake**: Parquet files partitioned by date (`raw/trades/YYYY/MM/DD/`)
+- **Production patterns**: Retry with exponential backoff, automatic reconnection, graceful shutdown, Dead Letter Queue
 - **Observability**: Prometheus metrics (throughput, errors, connections)
 - **Structured logging**: JSON logs for easy parsing
 
 ### Coming soon 🚧
-- BigQuery consumer with batch inserts and DLQ
 - dbt transformations (staging → intermediate → marts)
 - Airflow orchestration
 - Grafana dashboards
@@ -79,7 +80,7 @@ realtime-market-pipeline/
 │   │   ├── binance_ws.py       # WebSocket real-time trades
 │   │   └── coingecko.py        # API polling for market data
 │   ├── consumers/
-│   │   └── (coming soon)
+│   │   └── bigquery_consumer.py  # Dual-write to BigQuery + GCS
 │   └── common/
 │       ├── config.py           # Pydantic settings
 │       ├── logging.py          # Structured logging

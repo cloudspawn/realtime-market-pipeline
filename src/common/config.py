@@ -52,6 +52,10 @@ class Settings(BaseSettings):
     # Monitoring
     prometheus_port: int = 8000
 
+    # GCS
+    gcs_bucket: str = ""
+    gcs_parquet_prefix: str = "raw"    
+
     @property
     def binance_symbols_list(self) -> list[str]:
         """Parse comma-separated symbols into a list."""
