@@ -1,0 +1,29 @@
+name: 'market_pipeline'
+version: '1.0.0'
+
+profile: 'market_pipeline'
+
+model-paths: ["models"]
+analysis-paths: ["analyses"]
+test-paths: ["tests"]
+seed-paths: ["seeds"]
+macro-paths: ["macros"]
+snapshot-paths: ["snapshots"]
+
+clean-targets:
+  - "target"
+  - "dbt_packages"
+
+models:
+  market_pipeline:
+    staging:
+      +materialized: view
+    intermediate:
+      +materialized: view
+    marts:
+      +materialized: table
+
+vars:
+  # Update these with your GCP settings
+  gcp_project_id: bigquery-486314
+  bq_dataset: market_data

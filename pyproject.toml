@@ -26,6 +26,7 @@ dependencies = [
     "pydantic-settings>=2.7.0",
     "pyarrow>=18.0.0",
     "google-cloud-storage>=2.18.0",
+    "dbt-bigquery>=1.9.0",
 ]
 
 [project.optional-dependencies]
