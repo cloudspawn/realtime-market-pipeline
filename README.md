@@ -7,7 +7,7 @@
 [![Kafka](https://img.shields.io/badge/Kafka-Confluent-black?logo=apachekafka&logoColor=white)](https://confluent.io)
 [![BigQuery](https://img.shields.io/badge/BigQuery-Google%20Cloud-4285F4?logo=googlebigquery&logoColor=white)](https://cloud.google.com/bigquery)
 [![dbt](https://img.shields.io/badge/dbt-1.9-FF694B?logo=dbt&logoColor=white)](https://getdbt.com)
-[![Airflow](https://img.shields.io/badge/Airflow-2.x-017CEE?logo=apacheairflow&logoColor=white)](https://airflow.apache.org)
+[![Airflow](https://img.shields.io/badge/Airflow-2.10-017CEE?logo=apacheairflow&logoColor=white)](https://airflow.apache.org)
 
 Production-grade real-time market data pipeline: multi-source ingestion → Kafka → BigQuery → dbt, with Airflow orchestration and Prometheus/Grafana monitoring.
 
@@ -26,22 +26,22 @@ Production-grade real-time market data pipeline: multi-source ingestion → Kafk
 ┌─────────────────────────────────────────────────────────────────┐
 │                         PROCESSING                              │
 ├─────────────────────────────────────────────────────────────────┤
-│  Kafka ──▶ Consumer ──▶ BigQuery (raw)                         │
+│  Kafka ──▶ Consumer ──▶ BigQuery (raw) + GCS (parquet)         │
 │                │                                                │
 │                ├── Batch insert                                 │
 │                ├── Dead Letter Queue                            │
-│                └── Idempotent writes                            │
+│                └── Dual-write (DWH + Data Lake)                │
 └─────────────────────────────────────────────────────────────────┘
                                  │
                                  ▼
 ┌─────────────────────────────────────────────────────────────────┐
 │                      TRANSFORMATION                             │
 ├─────────────────────────────────────────────────────────────────┤
-│  Airflow ──▶ dbt run (scheduled)                               │
+│  Airflow ──▶ dbt run (every 10 min)                            │
 │                 │                                               │
-│                 ├── staging                                     │
-│                 ├── intermediate                                │
-│                 └── marts                                       │
+│                 ├── staging (views)                             │
+│                 ├── intermediate (views)                        │
+│                 └── marts (tables)                              │
 └─────────────────────────────────────────────────────────────────┘
                                  │
                                  ▼
@@ -63,14 +63,16 @@ Production-grade real-time market data pipeline: multi-source ingestion → Kafk
 - **Kafka streaming**: Multi-topic architecture with partitioning by symbol
 - **Dual-write consumer**: BigQuery (data warehouse) + GCS Parquet (data lake)
 - **Data lake**: Parquet files partitioned by date (`raw/trades/YYYY/MM/DD/`)
+- **dbt transformations**: staging → intermediate → marts
+- **Airflow orchestration**: DAG with dbt run/test every 10 minutes
+- **PostgreSQL**: Production-ready Airflow metadata database
+- **Docker Compose**: Full orchestration with one command
 - **Production patterns**: Retry with exponential backoff, automatic reconnection, graceful shutdown, Dead Letter Queue
 - **Observability**: Prometheus metrics (throughput, errors, connections)
 - **Structured logging**: JSON logs for easy parsing
 
 ### Coming soon 🚧
-- dbt transformations (staging → intermediate → marts)
-- Airflow orchestration
-- Grafana dashboards
+- Grafana dashboards (public)
 
 ## Project Structure
 ```
@@ -80,39 +82,75 @@ realtime-market-pipeline/
 │   │   ├── binance_ws.py       # WebSocket real-time trades
 │   │   └── coingecko.py        # API polling for market data
 │   ├── consumers/
-│   │   └── bigquery_consumer.py  # Dual-write to BigQuery + GCS
+│   │   └── bigquery_consumer.py # Dual-write to BigQuery + GCS
 │   └── common/
 │       ├── config.py           # Pydantic settings
 │       ├── logging.py          # Structured logging
 │       ├── kafka_client.py     # Kafka producer wrapper
 │       └── metrics.py          # Prometheus metrics
 ├── dbt/
-│   └── models/                 # (coming soon)
+│   ├── dbt_project.yml
+│   ├── profiles.yml
+│   └── models/
+│       ├── staging/            # stg_trades, stg_prices
+│       ├── intermediate/       # int_trades_aggregated, int_prices_latest
+│       └── marts/              # mart_trading_summary
 ├── airflow/
-│   └── dags/                   # (coming soon)
-├── monitoring/
-│   └── grafana/                # (coming soon)
-├── tests/
-├── docs/
+│   ├── Dockerfile              # Custom Airflow image with dbt
+│   └── dags/
+│       └── dbt_dag.py          # DAG for dbt orchestration
+├── docker-compose.yml          # Full orchestration
+├── Dockerfile                  # App image for producers/consumer
 └── README.md
 ```
 
 ## Quick Start
+
+### Prerequisites
+- Docker & Docker Compose
+- Confluent Cloud account (Kafka)
+- GCP account (BigQuery, GCS)
+
+### Setup
 ```bash
 # Clone
 git clone https://github.com/cloudspawn/realtime-market-pipeline.git
 cd realtime-market-pipeline
 
-# Install dependencies
-uv sync
-
 # Configure
 cp .env.example .env
 # Edit .env with your credentials
 
-# Run producers
-uv run python -m src.producers.binance_ws   # Terminal 1
-uv run python -m src.producers.coingecko    # Terminal 2
+# Add GCP service account key
+cp /path/to/your/key.json secrets/gcp-key.json
+
+# Start everything
+docker compose up -d
+```
+
+### Access
+
+| Service | URL |
+|---------|-----|
+| Airflow | http://localhost:8080 |
+| Prometheus (producer-binance) | http://localhost:8000/metrics |
+| Prometheus (consumer) | http://localhost:8001/metrics |
+| Prometheus (producer-coingecko) | http://localhost:8002/metrics |
+
+### Logs
+```bash
+# All services
+docker compose logs -f
+
+# Specific service
+docker compose logs -f producer-binance
+docker compose logs -f consumer
+docker compose logs -f airflow-scheduler
+```
+
+### Stop
+```bash
+docker compose down
 ```
 
 ## Configuration
@@ -121,17 +159,21 @@ See `.env.example` for all available settings.
 
 Required:
 - Confluent Cloud credentials (Kafka)
-- GCP credentials (BigQuery)
+- GCP credentials (BigQuery, GCS)
+- Airflow admin credentials
+- PostgreSQL password
 
 ## Metrics
 
-Prometheus metrics exposed at `http://localhost:8000/metrics`:
+Prometheus metrics exposed on each service:
 
 | Metric | Type | Description |
 |--------|------|-------------|
 | `producer_messages_produced_total` | Counter | Messages sent to Kafka |
 | `producer_errors_total` | Counter | Producer errors by type |
 | `producer_websocket_connections` | Gauge | Active WebSocket connections |
+| `consumer_messages_consumed_total` | Counter | Messages consumed from Kafka |
+| `consumer_messages_inserted_total` | Counter | Messages inserted into BigQuery |
 
 ## License
 

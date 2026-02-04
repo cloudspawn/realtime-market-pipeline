@@ -1,0 +1,11 @@
+market_pipeline:
+  outputs:
+    dev:
+      type: bigquery
+      method: service-account
+      project: bigquery-486314
+      dataset: market_data
+      keyfile: ../secrets/gcp-key.json
+      location: europe-west1
+      threads: 4
+  target: dev

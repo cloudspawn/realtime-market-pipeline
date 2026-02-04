@@ -1,0 +1,9 @@
+version: 2
+
+sources:
+  - name: raw
+    database: "{{ var('gcp_project_id') }}"
+    schema: "{{ var('bq_dataset') }}"
+    tables:
+      - name: trades
+      - name: prices
