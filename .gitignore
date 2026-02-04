@@ -1,0 +1,34 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+.uv/
+
+# Environment
+.env
+.env.local
+.envrc
+secrets/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Project specific
+*.log
+logs/
+
+# GCP credentials
+*.json
+!dbt/profiles.yml
+
+# Airflow
+airflow/logs/
+airflow/airflow.db

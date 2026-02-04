@@ -1,0 +1,49 @@
+[project]
+name = "realtime-market-pipeline"
+version = "0.1.0"
+description = "Production-grade real-time market data pipeline"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    # Kafka
+    "confluent-kafka>=2.6.0",
+    # BigQuery
+    "google-cloud-bigquery>=3.27.0",
+    # WebSocket
+    "websockets>=14.0",
+    # HTTP
+    "requests>=2.32.0",
+    "httpx>=0.28.0",
+    # Retry logic
+    "tenacity>=9.0.0",
+    # Metrics
+    "prometheus-client>=0.21.0",
+    # Logging
+    "structlog>=24.4.0",
+    # Config
+    "python-dotenv>=1.0.0",
+    "pydantic>=2.10.0",
+    "pydantic-settings>=2.7.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.3.0",
+    "pytest-asyncio>=0.25.0",
+    "pytest-cov>=6.0.0",
+    "ruff>=0.8.0",
+]
+airflow = [
+    "apache-airflow>=2.10.0",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
