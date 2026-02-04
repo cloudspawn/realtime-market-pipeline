@@ -1,5 +1,8 @@
 # realtime-market-pipeline
 
+> ⚠️ **Work in Progress** — Production-grade version of [realtime-crypto-elt](https://github.com/cloudspawn/realtime-crypto-elt)
+
+[![Status](https://img.shields.io/badge/status-in%20development-yellow)]()
 [![Python](https://img.shields.io/badge/Python-3.12-blue?logo=python&logoColor=white)](https://python.org)
 [![Kafka](https://img.shields.io/badge/Kafka-Confluent-black?logo=apachekafka&logoColor=white)](https://confluent.io)
 [![BigQuery](https://img.shields.io/badge/BigQuery-Google%20Cloud-4285F4?logo=googlebigquery&logoColor=white)](https://cloud.google.com/bigquery)
@@ -9,7 +12,6 @@
 Production-grade real-time market data pipeline: multi-source ingestion → Kafka → BigQuery → dbt, with Airflow orchestration and Prometheus/Grafana monitoring.
 
 ## Architecture
-
 ```
 ┌─────────────────────────────────────────────────────────────────┐
 │                         INGESTION                               │
@@ -17,7 +19,7 @@ Production-grade real-time market data pipeline: multi-source ingestion → Kafk
 │  Binance WebSocket ──┐                                          │
 │  CoinGecko API ──────┼──▶ Producers ──▶ Kafka (multi-topics)   │
 │                      │         │                                │
-│                      │    retry + circuit breaker               │
+│                      │    retry + reconnection                  │
 └──────────────────────┴──────────────────────────────────────────┘
                                  │
                                  ▼
@@ -26,7 +28,7 @@ Production-grade real-time market data pipeline: multi-source ingestion → Kafk
 ├─────────────────────────────────────────────────────────────────┤
 │  Kafka ──▶ Consumer ──▶ BigQuery (raw)                         │
 │                │                                                │
-│                ├── Batch insert (configurable)                  │
+│                ├── Batch insert                                 │
 │                ├── Dead Letter Queue                            │
 │                └── Idempotent writes                            │
 └─────────────────────────────────────────────────────────────────┘
@@ -55,53 +57,46 @@ Production-grade real-time market data pipeline: multi-source ingestion → Kafk
 
 ## Features
 
-- **Multi-source ingestion**: Binance WebSocket (real-time) + CoinGecko API (enrichment)
-- **Decoupled architecture**: Kafka as buffer with partitioning by asset
-- **Production patterns**: retry with backoff, circuit breaker, dead letter queue
-- **Batch processing**: configurable batch size with flush timeout
-- **Idempotent writes**: deduplication on BigQuery
-- **Orchestration**: Airflow DAGs with scheduling and alerting
-- **Observability**: Prometheus metrics + Grafana dashboards
-- **3-layer dbt models**: staging → intermediate → marts
+### Implemented ✅
+- **Multi-source ingestion**: Binance WebSocket (real-time trades) + CoinGecko API (market data)
+- **20 cryptocurrencies**: BTC, ETH, SOL, ADA, DOT, AVAX, LINK, MATIC, XRP, BNB, DOGE, SHIB, LTC, ATOM, NEAR, APT, ARB, OP, INJ, SUI
+- **Kafka streaming**: Multi-topic architecture with partitioning by symbol
+- **Production patterns**: Retry with exponential backoff, automatic reconnection, graceful shutdown
+- **Observability**: Prometheus metrics (throughput, errors, connections)
+- **Structured logging**: JSON logs for easy parsing
+
+### Coming soon 🚧
+- BigQuery consumer with batch inserts and DLQ
+- dbt transformations (staging → intermediate → marts)
+- Airflow orchestration
+- Grafana dashboards
 
 ## Project Structure
-
 ```
 realtime-market-pipeline/
 ├── src/
 │   ├── producers/
 │   │   ├── binance_ws.py       # WebSocket real-time trades
-│   │   └── coingecko.py        # API polling for metadata
+│   │   └── coingecko.py        # API polling for market data
 │   ├── consumers/
-│   │   └── bigquery_consumer.py
+│   │   └── (coming soon)
 │   └── common/
-│       ├── retry.py            # Retry logic with backoff
-│       ├── metrics.py          # Prometheus metrics
-│       └── config.py           # Configuration management
+│       ├── config.py           # Pydantic settings
+│       ├── logging.py          # Structured logging
+│       ├── kafka_client.py     # Kafka producer wrapper
+│       └── metrics.py          # Prometheus metrics
 ├── dbt/
-│   └── models/
-│       ├── staging/
-│       ├── intermediate/
-│       └── marts/
+│   └── models/                 # (coming soon)
 ├── airflow/
-│   └── dags/
-│       └── market_pipeline_dag.py
+│   └── dags/                   # (coming soon)
 ├── monitoring/
-│   ├── prometheus/
-│   │   └── prometheus.yml
-│   └── grafana/
-│       └── dashboards/
+│   └── grafana/                # (coming soon)
 ├── tests/
-│   ├── unit/
-│   └── integration/
 ├── docs/
-│   └── (screenshots)
-├── docker-compose.yml
 └── README.md
 ```
 
 ## Quick Start
-
 ```bash
 # Clone
 git clone https://github.com/cloudspawn/realtime-market-pipeline.git
@@ -114,41 +109,28 @@ uv sync
 cp .env.example .env
 # Edit .env with your credentials
 
-# Run (development)
-uv run python src/producers/binance_ws.py
-uv run python src/consumers/bigquery_consumer.py
-
-# Run (production with Docker)
-docker-compose up -d
+# Run producers
+uv run python -m src.producers.binance_ws   # Terminal 1
+uv run python -m src.producers.coingecko    # Terminal 2
 ```
 
 ## Configuration
 
-Create `.env` at root:
+See `.env.example` for all available settings.
 
-```
-# Kafka (Confluent Cloud)
-KAFKA_BOOTSTRAP_SERVERS=
-KAFKA_API_KEY=
-KAFKA_API_SECRET=
+Required:
+- Confluent Cloud credentials (Kafka)
+- GCP credentials (BigQuery)
 
-# GCP
-GCP_PROJECT_ID=
-GCP_CREDENTIALS_PATH=
-BQ_DATASET=market_data
+## Metrics
 
-# Binance
-BINANCE_WS_URL=wss://stream.binance.com:9443/ws
-```
+Prometheus metrics exposed at `http://localhost:8000/metrics`:
 
-## Monitoring
-
-Grafana dashboards available at `http://localhost:3000`:
-
-- **Throughput**: messages/second by source
-- **Latency**: end-to-end pipeline latency
-- **Errors**: error rate by component
-- **Consumer lag**: Kafka consumer lag
+| Metric | Type | Description |
+|--------|------|-------------|
+| `producer_messages_produced_total` | Counter | Messages sent to Kafka |
+| `producer_errors_total` | Counter | Producer errors by type |
+| `producer_websocket_connections` | Gauge | Active WebSocket connections |
 
 ## License
 
