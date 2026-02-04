@@ -84,7 +84,8 @@ Live data from Binance & CoinGecko, transformed by dbt, refreshed every 10 minut
 
 | Component | Description |
 |-----------|-------------|
-| ![Airflow](docs/screenshots/airflow-dag-runs.png) | Airflow DAG with dbt runs |
+| ![Airflow DAGs](docs/screenshots/airflow-dag-list.png) | Airflow DAG list with run history |
+| ![Airflow Detail](docs/screenshots/airflow-dag-detail.png) | DAG graph and task execution |
 | ![BigQuery](docs/screenshots/bigquery-tables.png) | BigQuery tables and views |
 | ![GCS](docs/screenshots/gcs-parquet-files.png) | GCS Parquet data lake |
 | ![Docker](docs/screenshots/docker-compose-services.png) | Docker Compose services |
