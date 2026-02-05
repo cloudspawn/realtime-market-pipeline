@@ -12,7 +12,7 @@ Production-grade real-time cryptocurrency market data pipeline with multi-source
 
 ## 🔴 Live Dashboard
 
-**[➡️ View Real-time Dashboard](https://cloudspawn.grafana.net/public-dashboards/39de7467de6e4ffd90d2605eda0a6999)**
+**[➡️ View Real-time Dashboard](https://cloudspawn.grafana.net/public-dashboards/39de7467de6e4ffd90d2605eda0a6999?from=now-24h&to=now&timezone=browser)**
 
 Live data from Binance & CoinGecko, transformed by dbt, refreshed every 5 minutes.
 
