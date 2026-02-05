@@ -14,7 +14,7 @@ Production-grade real-time cryptocurrency market data pipeline with multi-source
 
 **[➡️ View Real-time Dashboard](https://cloudspawn.grafana.net/public-dashboards/39de7467de6e4ffd90d2605eda0a6999)**
 
-Live data from Binance & CoinGecko, transformed by dbt, refreshed every 10 minutes.
+Live data from Binance & CoinGecko, transformed by dbt, refreshed every 5 minutes.
 
 ![Dashboard Overview](docs/screenshots/dashboard-grafana-overview.png)
 
@@ -55,8 +55,10 @@ Live data from Binance & CoinGecko, transformed by dbt, refreshed every 10 minut
 ┌─────────────────────────────────────────────────────────────────┐
 │                       MONITORING                                │
 ├─────────────────────────────────────────────────────────────────┤
-│  Prometheus ◀── metrics (throughput, errors, connections)      │
-│  Grafana Cloud ──▶ dashboards (BigQuery data)                  │
+│  Grafana Agent ──▶ Prometheus metrics ──▶ Grafana Cloud        │
+│                                                                 │
+│  Metrics: throughput, errors, connections, inserts              │
+│  Alerts: Pipeline Down (WebSocket disconnection)                │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
@@ -73,11 +75,15 @@ Live data from Binance & CoinGecko, transformed by dbt, refreshed every 10 minut
 - **dbt**: Layered transformations (staging → intermediate → marts)
 - **Docker Compose**: Full stack orchestration
 
+### Monitoring & Alerting
+- **Prometheus metrics**: Messages/sec, errors, WebSocket connections, BigQuery inserts
+- **Grafana Agent**: Push metrics to Grafana Cloud (no exposed ports)
+- **Alerting**: Pipeline Down alert when WebSocket disconnects
+
 ### Production Patterns
 - Retry with exponential backoff
 - Graceful shutdown handling
 - Dead Letter Queue for failed messages
-- Prometheus metrics instrumentation
 - Structured JSON logging
 
 ## Screenshots
@@ -172,6 +178,23 @@ docker compose logs -f airflow-scheduler
 docker compose down
 ```
 
+## Cloud Deployment
+
+The pipeline runs on a GCP VM (e2-medium) with Grafana Agent pushing metrics to Grafana Cloud.
+
+### Setup Grafana Agent
+```bash
+# Install
+curl -O -L https://github.com/grafana/agent/releases/download/v0.43.3/grafana-agent-linux-amd64.zip
+unzip grafana-agent-linux-amd64.zip
+sudo mv grafana-agent-linux-amd64 /usr/local/bin/grafana-agent
+
+# Configure /etc/grafana-agent.yaml with your Grafana Cloud credentials
+
+# Run
+sudo grafana-agent --config.file=/etc/grafana-agent.yaml &
+```
+
 ## Configuration
 
 See `.env.example` for all available settings.
@@ -211,6 +234,14 @@ Prometheus metrics exposed on each service:
 | `consumer_messages_consumed_total` | Counter | Messages consumed |
 | `consumer_messages_inserted_total` | Counter | Messages inserted to BigQuery |
 
+## Alerting
+
+| Alert | Condition | Description |
+|-------|-----------|-------------|
+| Pipeline Down | `producer_websocket_connections < 1` | WebSocket disconnected |
+
+Alerts are configured in Grafana Cloud and visible on the dashboard.
+
 ## Roadmap
 
 - [x] Multi-source ingestion (Binance, CoinGecko)
@@ -221,8 +252,9 @@ Prometheus metrics exposed on each service:
 - [x] Airflow orchestration
 - [x] Docker Compose deployment
 - [x] Grafana Cloud dashboard
-- [ ] Prometheus metrics in Grafana (cloud VM)
-- [ ] Alerting rules
+- [x] Prometheus metrics with Grafana Agent
+- [x] Alerting rules
+- [x] Cloud VM deployment (GCP)
 
 ## License
 
