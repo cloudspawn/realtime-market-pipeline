@@ -1,6 +1,6 @@
 # Real-time Market Pipeline
 
-[![Status](https://img.shields.io/badge/status-live-brightgreen)]()
+[![Status](https://img.shields.io/badge/status-archived-lightgrey)]()
 [![Python](https://img.shields.io/badge/Python-3.12-blue?logo=python&logoColor=white)](https://python.org)
 [![Kafka](https://img.shields.io/badge/Kafka-Confluent-black?logo=apachekafka&logoColor=white)](https://confluent.io)
 [![BigQuery](https://img.shields.io/badge/BigQuery-Google%20Cloud-4285F4?logo=googlebigquery&logoColor=white)](https://cloud.google.com/bigquery)
@@ -10,11 +10,11 @@
 
 Production-grade real-time cryptocurrency market data pipeline with multi-source ingestion, stream processing, data warehouse, and live monitoring.
 
-## 🔴 Live Dashboard
+<!-- ## 🔴 Live Dashboard
 
 **[➡️ View Real-time Dashboard](https://cloudspawn.grafana.net/public-dashboards/39de7467de6e4ffd90d2605eda0a6999?from=now-24h&to=now&timezone=browser)**
 
-Live data from Binance & CoinGecko, transformed by dbt, refreshed every 5 minutes.
+Live data from Binance & CoinGecko, transformed by dbt, refreshed every 5 minutes. -->
 
 ![Dashboard Overview](docs/screenshots/dashboard-grafana-overview.png)
 
@@ -160,7 +160,7 @@ docker compose up -d
 | Airflow | http://localhost:8080 | admin / (see .env) |
 | Prometheus (producer) | http://localhost:8000/metrics | - |
 | Prometheus (consumer) | http://localhost:8001/metrics | - |
-| Grafana Dashboard | [Public Link](https://cloudspawn.grafana.net/public-dashboards/39de7467de6e4ffd90d2605eda0a6999) | - |
+<!-- | Grafana Dashboard | [Public Link](https://cloudspawn.grafana.net/public-dashboards/39de7467de6e4ffd90d2605eda0a6999) | - | -->
 
 ### Logs
 ```bash
